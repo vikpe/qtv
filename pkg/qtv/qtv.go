@@ -203,7 +203,7 @@ func (qtv *QTV) Stop() error {
 }
 
 func (qtv *QTV) regVars() {
-	qtv.qvs.RegEx("*version", "QTVGO "+qtvRelease, qVarFlagReadOnly|qVarFlagServerInfo, nil)
+	qtv.qvs.RegEx("*version", "QTV "+qtvRelease, qVarFlagReadOnly|qVarFlagServerInfo, nil)
 
 	qtv.qvs.RegEx("network", "", qVarFlagInitOnly, nil)
 	qtv.qvs.RegEx("listen_address", ":28000", qVarFlagInitOnly, nil)
