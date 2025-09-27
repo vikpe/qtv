@@ -25,8 +25,8 @@ import (
 //
 
 const (
-	qtvVersion    = 1.0        // We support up to this QTV version.
-	qtvRelease    = "1.16-dev" // Release version.
+	qtvVersion    = 1.0     // We support up to this QTV version.
+	qtvRelease    = "2.0.0" // Release version.
 	qtvBuild      = "0"
 	qtvProjectURL = "https://github.com/qw-group/qtv"
 	qtvHelpURL    = qtvProjectURL
