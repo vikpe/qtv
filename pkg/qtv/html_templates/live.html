@@ -1,0 +1,84 @@
+{{define "qtvBody"}}
+
+    <div class="mb-6">
+        <h1 class="text-2xl">Live</h1>
+        <div class="text-slate-400">{{len .List}} servers configured</div>
+    </div>
+
+    {{if not (len .List)}}
+    	<div class="text-slate-400">No servers have been configured.</div>
+    {{end}}
+
+    <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill,minmax(340px,1fr));">
+    {{range $i, $e := .List}}
+        <div class="bg-base-300 shadow border border-slate-900 rounded-md">
+            <div class="flex flex-col items-center justify-center min-h-64 bg-base-200 bg-cover bg-no-repeat bg-center rounded-t-sm"
+                style="background-image: url(https://a.quake.world/mapshots/webp/sm/{{.MapName}}.webp)">
+               	{{template "qtvTeams" .Teams}}
+                {{if .UpstreamStatus}}<span class="text-slate-400">{{.UpstreamStatus}}</span>{{end}}
+                {{if not .UpstreamStatus}}<div class="text-slate-400 text-sm">{{len .Ds}} spectators</div>{{end}}
+            </div>
+            <div class="p-4 flex justify-between">
+
+                <div class="space-y-1">
+                    <div class="font-semibold">{{.Server}}</div>
+                    <div class="text-slate-400 text-sm">{{.Mode}} - {{.MatchStatus}}</div>
+                    {{if .Protected}}<div class="text-yellow-200 text-sm">(password protected)</div>{{end}}
+                </div>
+
+                {{if not .UpstreamStatus}}
+                    {{$address := .Address}}{{if not $address}}{{$address = $.Address}}{{end}}
+                    <div class="dropdown dropdown-top dropdown-end">
+                      <div tabindex="0" role="button" class="btn btn-square">
+                          <img src="/icons/menu.svg" class="size-4" alt="">
+                      </div>
+                      <ul tabindex="0" class="dropdown-content menu bg-slate-950 rounded-box z-1 w-52 p-2 shadow">
+                        <li><a href="qw://{{.Server}}">Join server</a></li>
+                        <li><a href="qw://{{.Id}}@{{$address}}/qtvplay">Join QTV</a></li>
+                        <li><a href="https://hub.quakeworld.nu/qtv/?address={{.Server}}">Watch on Hub</a></li>
+                      </ul>
+                    </div>
+                {{end}}
+            </div>
+        </div>
+    {{end}}
+    </div>
+
+{{end}}
+
+{{define "qtvTeams"}}
+	{{if (gt (len .) 1)}}
+		{{/* teamplay */}}
+		<div class="space-y-2">
+            <div class="flex gap-4 font-bold">
+    			{{range .}}
+     			<div class="flex-1 text-center">
+                    {{.Name}}: {{.Score}}
+     			</div>
+    			{{end}}
+            </div>
+
+            <div class="flex gap-4">
+    			{{range .}}
+     			<div class="flex-1">
+                    {{template "qtvOneTeam" .}}
+     			</div>
+    			{{end}}
+            </div>
+		</div>
+	{{else if (eq (len .) 1)}}
+		{{/* non teamplay */}}
+		{{template "qtvOneTeam" index . 0}}
+	{{end}}
+{{end}}
+
+{{define "qtvOneTeam"}}
+<table class="text-sm mb-4">
+	{{range $i, $e := .Players}}
+	<tr>
+		<td class="w-4">{{.Score}}</td>
+		<td class="">{{.Name}}</td>
+	</tr>
+	{{end}}
+</table>
+{{end}}

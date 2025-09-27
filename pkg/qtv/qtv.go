@@ -29,7 +29,7 @@ const (
 	qtvRelease    = "2.0.0" // Release version.
 	qtvBuild      = "0"
 	qtvProjectURL = "https://github.com/qw-group/qtv"
-	qtvHelpURL    = qtvProjectURL
+	qtvHelpURL    = "https://discord.com/channels/166866762787192833/709360526899150858" // #helpdesk @ Quake.World
 	qtvMaxClients = 2048
 )
 

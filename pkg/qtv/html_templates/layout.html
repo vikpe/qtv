@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dracula">
+	<head>
+	    <meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>{{.Title}}</title>
+		<link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+		<link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Rubik&display=swap" rel="stylesheet">
+	</head>
+	<body class="flex flex-col max-w-[1600px] min-h-screen font-[Rubik] mx-auto px-4">
+
+        <header>
+            <div class="navbar">
+              <div class="navbar-start gap-4">
+                <a href="/nowplaying/" class="btn bg-sky-700 text-lg text-white text-shadow-lg">
+                    {{.HostName}}
+                </a>
+
+                <ul class="menu menu-horizontal px-1 text-lg">
+                  <li><a href="/nowplaying/"><span class="status status-error animate-pulse"></span> Live</a></li>
+                  <li><a href="/demolist/">Demos</a></li>
+                </ul>
+              </div>
+            </div>
+        </header>
+
+        <div class="divider !mt-0"></div>
+
+		<main class="flex-1">
+		{{block "qtvBody" .}}{{end}}
+		</main>
+
+		<div class="divider"></div>
+
+		<footer class="flex items-center gap-10 justify-center pb-5 text-slate-400 text-sm font-mono">
+		    QTV {{.Version}}, build {{.Build}}
+			<a href="{{.ProjectURL}}" class="hover:text-white"><img src="/icons/github.svg" alt="GitHub" class="size-4 inline" /> GitHub</a>
+			<a href="{{.HelpURL}}" class="hover:text-white"><img src="/icons/discord.svg" alt="Discord" class="size-4 inline" /> Discord</a>
+		</footer>
+
+	</body>
+</html>

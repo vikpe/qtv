@@ -1,0 +1,51 @@
+{{define "qtvBody"}}
+
+<div class="flex flex-wrap gap-4 items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl">Demos</h1>
+        <div class="text-slate-400">
+        {{len .List}} demos, click a filename to download.
+        </div>
+    </div>
+
+    <button class="btn btn-soft" onclick="UploadModal.showModal()">+ Upload Demo</button>
+    <dialog id="UploadModal" class="modal">
+      <div class="modal-box">
+        <h3 class="text-lg font-bold mb-2">Upload demo</h3>
+        <div class="text-slate-400">Note: only .mvd files are allowed</div>
+        <form enctype="multipart/form-data" action="/upload/" method="post" class="flex items-center gap-2 mt-4">
+            <input type="file" name="file" class="file-input" accept=".mvd" />
+            <button type="submit" class="btn bg-sky-700">Submit</button>
+        </form>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+
+</div>
+
+<table class="table table-zebra table-pin-rows mx-0 table" id="demos">
+	<thead>
+		<tr class="shadow">
+			<th class="">Filename</th>
+			<th class="w-32">Size</th>
+			<th class="w-1">Stream</th>
+		</tr>
+	</thead>
+	<tbody>
+		{{range $i, $e := .List}}
+		<tr>
+			<td class=""><a href="/demos/{{.FileInfo.Name}}" class="hover:text-sky-400">{{.FileInfo.Name}}</a></td>
+			<td class="text-slate-300">{{toKb .FileInfo.Size}} kB</td>
+			<td class="">
+				{{if hasSuffix .FileInfo.Name ".mvd"}}
+					<a href="qw://file:{{.FileInfo.Name}}@{{$.Address}}/qtvplay" class="btn btn-square btn-xs"><img src="/icons/play.svg" class="size-3" /></a>
+				{{end}}
+			</td>
+		</tr>
+		{{end}}
+	</tbody>
+</table>
+
+{{end}}

@@ -1,6 +1,7 @@
 package qtv
 
 import (
+	_ "embed"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -25,14 +26,27 @@ import (
 )
 
 //
+// HTML templates
+//
+
+//go:embed html_templates/layout.html
+var templateLayout string
+
+//go:embed html_templates/live.html
+var templateNowPlaying string
+
+//go:embed html_templates/demos.html
+var templateDemos string
+
+//
 // Built-in HTTP interface.
 //
 
 type httpSv struct {
 	qtv                *QTV               // Parent object.
-	mainTemplate       *template.Template // Base html template.
-	demosTemplate      *template.Template // Demos html template, derived from the base.
-	nowPlayingTemplate *template.Template // Now playing html template, derived from the base.
+	layoutTemplate     *template.Template // Layout template.
+	demosTemplate      *template.Template // Demos html template, using layout.
+	nowPlayingTemplate *template.Template // Now playing html template, using layout.
 	upload             atomic.Bool        // True if upload is active.
 	lastUpload         time.Time          // Time of last upload start.
 }
@@ -153,167 +167,25 @@ var (
 func (sv *httpSv) prepare() (err error) {
 	defer func() { err = multierror.Prefix(err, "httpSv.prepare:") }()
 
-	qtvMain := `
-<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
-<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
-	<head>
-		<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
-		<title>{{.Title}}</title>
-		<link rel="StyleSheet" href="/style.css" type="text/css" />
-		<script src="/script.js" type="text/javascript"></script>
-	</head>
-	<body>
-		<div id="navigation">
-			<span><a href="/nowplaying/">Live</a></span><span><a href="/demolist/">Demos</a></span><span><a href="{{.HelpURL}}" target="_blank">Help</a></span>
-		</div>
-		{{block "qtvBody" .}}{{end}}
-		<p id='version'><strong><a href="{{.ProjectURL}}">QTV</a> {{.Version}}, build {{.Build}}</strong></p>
-	</body>
-</html>
-`
-	sv.mainTemplate, err = template.New("qtvMain").Funcs(qtvTemplateFuncs).Parse(qtvMain)
+	sv.layoutTemplate, err = template.New("qtvMain").Funcs(qtvTemplateFuncs).Parse(templateLayout)
 	if err != nil {
 		return err
 	}
 
-	qtvDemos := `
-{{define "qtvBody"}}
-<h1>QuakeTV: Demo Listing</h1>
-<center>
-<form enctype="multipart/form-data" action="/upload/" method="post">
-	<input type="file" name="file" />
-	<input type="submit" value="upload demo" />
-</form>
-</center>
-<table id="demos" cellspacing="0">
-	<thead>
-		<tr>
-			<th class="stream">Stream</th>
-			<th class="save">Download</th>
-			<th class="name">Demoname</th>
-			<th class="size">Size</th>
-		</tr>
-	</thead>
-	<tbody>
-		{{range $i, $e := .List}}
-		<tr class="{{isEven $i}}">
-			<td class="stream">
-				{{if hasSuffix .FileInfo.Name ".mvd"}}
-					<a href="qw://file:{{.FileInfo.Name}}@{{$.Address}}/qtvplay"><img src="/stream.png" width="14" height="15" /></a>
-				{{end}}
-			</td>
-			<td class="save"><a href="/demos/{{.FileInfo.Name}}"><img src="/save.png" width="16" height="16" /></a></td>
-			<td class="name">{{.FileInfo.Name}}</td>
-			<td class="size">{{toKb .FileInfo.Size}} kB</td>
-		</tr>
-		{{end}}
-	</tbody>
-</table>
-<p>Total: {{len .List}} demos</p>
-{{end}}
-`
-
-	sv.demosTemplate, err = sv.mainTemplate.Clone()
+	sv.demosTemplate, err = sv.layoutTemplate.Clone()
 	if err != nil {
 		return err
 	}
-	_, err = sv.demosTemplate.Parse(qtvDemos)
+	_, err = sv.demosTemplate.Parse(templateDemos)
 	if err != nil {
 		return err
 	}
 
-	qtvNowPlaying := `
-{{define "qtvBody"}}
-<h1>QuakeTV: Now Playing on {{.HostName}}</h1>
-
-<table id="nowplaying" cellspacing="0">
-{{range $i, $e := .List}}
-	<tr class="{{isEven $i}}{{if .WithPlayers}} notempty netop{{end}}">
-
-		{{/* 1st cell: WATCH NOW button */}}
-		{{$address := .Address}}{{if not $address}}{{$address = $.Address}}{{end}}
-		<td class="wn"><span class="qtvfile"><a href="qw://{{.Id}}@{{$address}}/qtvplay">Watch&nbsp;now!</a></span></td>
-
-		{{/* 2nd cell: server address */}}
-		<td class="adr"><p class="hostname" style="display:none">{{.SvInfoHostName}}</p>{{.Server}}</td>
-
-		{{/* 3rd cell: map name */}}
-		<td class="mn">
-			{{if .UpstreamStatus}}{{.UpstreamStatus}}<br />{{end}}
-			{{if .MapName}}<span>{{.MapNameLong}}</span> ({{.MapName}}){{end}}
-			{{if .Protected}}<br />(password protected){{end}}
-		</td>
-	</tr>
-
-	{{/* Details if server not empty */}}
-	{{if .WithPlayers}}
-	<tr class="notempty nebottom">
-		<td class="mappic">
-			<img src="/levelshots/{{.MapName}}.jpg" width="144" height="108" alt="{{.MapName}}" title="{{.MapName}}" />
-		</td>
-		<td class="svstatus" colspan="2">
-			{{template "qtvTeams" .Teams}}
-			{{if .MatchStatus}}<p class="status">{{.MatchStatus}}</p>{{end}}
-			<p class="observers">Observers: <span>{{len .Ds}}</span></p>
-		</td>
-	</tr>
-	{{end}}
-{{end}}
-</table>
-
-{{if not (len .List)}}
-	<p>No streams are currently being played</p>
-{{end}}
-
-{{end}}
-
-{{define "qtvTeams"}}
-	{{if (gt (len .) 1)}}
-		{{/* teamplay */}}
-		<table class="overallscores">
-			<tr class="teaminfo">
-				{{range .}}
-				<td>
-					<span>Team: </span><span class="teamname">{{.Name}}</span>
-					<span class="frags">[{{.Score}}]</span>
-				</td>
-				{{end}}
-			</tr>
-			<tr>
-				{{range .}}
-				<td>
-					{{template "qtvOneTeam" .}}
-				</td>
-				{{end}}
-			</tr>
-		</table>
-	{{else if (eq (len .) 1)}}
-		{{/* non teamplay */}}
-		{{template "qtvOneTeam" index . 0}}
-	{{end}}
-{{end}}
-
-{{define "qtvOneTeam"}}
-<table class="scores" cellspacing="0">
-	<tr>
-		<th>Frags</th>
-		<th>Players</th>
-	</tr>
-	{{range $i, $e := .Players}}
-	<tr class="sc{{isEven $i}}">
-		<td class="frags">{{.Score}}</td>
-		<td class="nick">{{.Name}}</td>
-	</tr>
-	{{end}}
-</table>
-{{end}}
-`
-
-	sv.nowPlayingTemplate, err = sv.mainTemplate.Clone()
+	sv.nowPlayingTemplate, err = sv.layoutTemplate.Clone()
 	if err != nil {
 		return err
 	}
-	_, err = sv.nowPlayingTemplate.Parse(qtvNowPlaying)
+	_, err = sv.nowPlayingTemplate.Parse(templateNowPlaying)
 	if err != nil {
 		return err
 	}

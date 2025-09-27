@@ -307,6 +307,7 @@ type uStreamInfo struct {
 	MapName        string
 	MapNameLong    string
 	MatchStatus    string
+	Mode           string
 	UpstreamStatus string
 	Protected      bool
 	WithPlayers    bool
@@ -350,6 +351,7 @@ func (us *uStream) updateUStreamInfo() {
 		SvInfoHostName: normalizeText(us.qp.serverInfo.Get("hostname")),
 		MapName:        us.qp.serverInfo.Get("map"),
 		MapNameLong:    normalizeText(us.qp.mapName),
+		Mode:           us.qp.serverInfo.Get("mode"),
 		MatchStatus:    us.qp.serverInfo.Get("status"),
 		Teams:          us.updateUStreamTeamInfo(),
 	}
