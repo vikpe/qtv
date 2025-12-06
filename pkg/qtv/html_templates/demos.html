@@ -28,19 +28,25 @@
 <table class="table table-zebra table-pin-rows mx-0 table" id="demos">
 	<thead>
 		<tr class="shadow">
-			<th class="">Filename</th>
-			<th class="w-32">Size</th>
+			<th>Filename</th>
+			<th class="w-32 text-right">Size</th>
 			<th class="w-1">Stream</th>
 		</tr>
 	</thead>
 	<tbody>
 		{{range $i, $e := .List}}
 		<tr>
-			<td class=""><a href="/demos/{{.FileInfo.Name}}" class="hover:text-sky-400">{{.FileInfo.Name}}</a></td>
-			<td class="text-slate-300">{{toKb .FileInfo.Size}} kB</td>
-			<td class="">
+			<td>
+			    <a href="/demos/{{.FileInfo.Name}}" class="hover:text-sky-400 join" title="Download demo">
+					<img src="/icons/file.svg" class="size-4 mr-2 join-item" /> <span class="join-item">{{.FileInfo.Name}}</span>
+				</a>
+			</td>
+			<td class="text-slate-300 text-right">{{toKb .FileInfo.Size}} kB</td>
+			<td class="text-center">
 				{{if hasSuffix .FileInfo.Name ".mvd"}}
-					<a href="qw://file:{{.FileInfo.Name}}@{{$.Address}}/qtvplay" class="btn btn-square btn-xs"><img src="/icons/play.svg" class="size-3" /></a>
+					<a href="qw://file:{{.FileInfo.Name}}@{{$.Address}}/qtvplay" class="btn btn-square btn-xs" title="Stream demo">
+					    <img src="/icons/play.svg" class="size-3" />
+					</a>
 				{{end}}
 			</td>
 		</tr>

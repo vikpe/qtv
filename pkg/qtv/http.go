@@ -32,8 +32,8 @@ import (
 //go:embed html_templates/layout.html
 var templateLayout string
 
-//go:embed html_templates/live.html
-var templateNowPlaying string
+//go:embed html_templates/servers.html
+var templateServers string
 
 //go:embed html_templates/demos.html
 var templateDemos string
@@ -43,12 +43,12 @@ var templateDemos string
 //
 
 type httpSv struct {
-	qtv                *QTV               // Parent object.
-	layoutTemplate     *template.Template // Layout template.
-	demosTemplate      *template.Template // Demos html template, using layout.
-	nowPlayingTemplate *template.Template // Now playing html template, using layout.
-	upload             atomic.Bool        // True if upload is active.
-	lastUpload         time.Time          // Time of last upload start.
+	qtv             *QTV               // Parent object.
+	layoutTemplate  *template.Template // Layout template.
+	demosTemplate   *template.Template // Demos html template, using layout.
+	serversTemplate *template.Template // Servers html template, using layout.
+	upload          atomic.Bool        // True if upload is active.
+	lastUpload      time.Time          // Time of last upload start.
 }
 
 func newHttpSv(qtv *QTV) *httpSv {
@@ -181,11 +181,11 @@ func (sv *httpSv) prepare() (err error) {
 		return err
 	}
 
-	sv.nowPlayingTemplate, err = sv.layoutTemplate.Clone()
+	sv.serversTemplate, err = sv.layoutTemplate.Clone()
 	if err != nil {
 		return err
 	}
-	_, err = sv.nowPlayingTemplate.Parse(templateNowPlaying)
+	_, err = sv.serversTemplate.Parse(templateServers)
 	if err != nil {
 		return err
 	}
@@ -328,7 +328,7 @@ func (sv *httpSv) nowPlayingHandler(w http.ResponseWriter, r *http.Request) {
 	// Sort stream list by id so page looks similar on each load.
 	sort.Slice(data.List, func(i, j int) bool { return data.List[i].Id < data.List[j].Id })
 
-	if err := sv.nowPlayingTemplate.Execute(w, data); err != nil {
+	if err := sv.serversTemplate.Execute(w, data); err != nil {
 		log.Debug().Err(multierror.Prefix(err, "httpSv.nowHandler:")).Str("ctx", "httpSv").Msg("")
 	}
 }
@@ -400,10 +400,8 @@ func (fsys fileHidingFileSystem) Open(name string) (http.File, error) {
 func (sv *httpSv) serve(l net.Listener) (err error) {
 	r := mux.NewRouter()
 
-	r.Handle("/", http.RedirectHandler("/nowplaying/", http.StatusMovedPermanently))
-
-	r.HandleFunc("/nowplaying/", sv.nowPlayingHandler)
-	r.HandleFunc("/demolist/", sv.demosHandler)
+	r.HandleFunc("/", sv.nowPlayingHandler)
+	r.HandleFunc("/demos/", sv.demosHandler)
 	r.HandleFunc("/upload/", sv.uploadFile)
 
 	// Compat with original QTV
@@ -417,9 +415,9 @@ func (sv *httpSv) serve(l net.Listener) (err error) {
 	r.PathPrefix("/demos/").Handler(http.StripPrefix("/demos/", http.FileServer(demosFileSys)))
 
 	// File server for qtv dir.
-	// Would be better to have such files inside qtv/httproot but for backward compatibility we host whole qtv directory.
+	// Would be better to have such files inside qtv/httproot but for backward compatibility we host whole directory.
 	// We hide .cfg and .dot files though.
-	qtvFileSys := fileHidingFileSystem{http.Dir("qtv")}
+	qtvFileSys := fileHidingFileSystem{http.Dir("public")}
 	r.PathPrefix("/").Handler(http.FileServer(qtvFileSys))
 
 	// Replace stdlog with zerolog inside http server.
