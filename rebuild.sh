@@ -1,7 +1,7 @@
 #!/bin/bash
 
 QTVDIR="pkg"   # directory to watch
-QTVCMD="./qtv-go"
+QTVCMD="./qtv"
 PIDFILE="/tmp/qtv.pid"
 
 while inotifywait -e modify,create,delete -r "$QTVDIR"; do
@@ -18,4 +18,3 @@ while inotifywait -e modify,create,delete -r "$QTVDIR"; do
     $QTVCMD &
     echo $! > "$PIDFILE"
 done
-
